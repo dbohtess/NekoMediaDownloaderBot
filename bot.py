@@ -131,7 +131,7 @@ async def start_handler(message: Message) -> None:
 
 
 @router.message(F.text)
-async def download_handler(message: Message, current_bot: Bot) -> None:
+async def download_handler(message: Message, bot: Bot) -> None:
     if not is_allowed(message):
         await message.answer("🔒 هذا البوت خاص.")
         return
@@ -151,7 +151,7 @@ async def download_handler(message: Message, current_bot: Bot) -> None:
     job_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        await current_bot.send_chat_action(message.chat.id, ChatAction.UPLOAD_VIDEO)
+        await bot.send_chat_action(message.chat.id, ChatAction.UPLOAD_VIDEO)
         video_path = await asyncio.to_thread(download_video, url, job_dir)
 
         if video_path.stat().st_size > MAX_VIDEO_SIZE_BYTES:
