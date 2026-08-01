@@ -131,9 +131,13 @@ async def start_handler(message: Message) -> None:
 
 
 @router.message(F.text)
-async def download_handler(message: Message, bot: Bot) -> None:
+async def download_handler(message: Message) -> None:
     if not is_allowed(message):
         await message.answer("🔒 هذا البوت خاص.")
+        return
+
+    if bot is None:
+        await message.answer("❌ البوت غير جاهز حاليًا.")
         return
 
     url = extract_supported_url(message.text or "")
@@ -205,11 +209,19 @@ async def other_messages_handler(message: Message) -> None:
 async def lifespan(_: FastAPI):
     if not bot:
         raise RuntimeError("BOT_TOKEN غير موجود")
+
     webhook_url = f"https://{RENDER_HOSTNAME}{WEBHOOK_PATH}"
-    await bot.set_webhook(webhook_url, secret_token=WEBHOOK_SECRET, drop_pending_updates=True)
+    await bot.set_webhook(
+        webhook_url,
+        secret_token=WEBHOOK_SECRET,
+        drop_pending_updates=True,
+    )
     logging.info("Webhook enabled: %s", webhook_url)
+
     yield
-    await bot.delete_webhook()
+
+    # لا نحذف الـ webhook وقت تبديل النسخ في Render؛
+    # النسخة القديمة قد تتوقف بعد تشغيل النسخة الجديدة وتمسح ربطها.
     await bot.session.close()
 
 
