@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: neko-media-downloader-bot
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ALLOWED_USERS
+        sync: false
