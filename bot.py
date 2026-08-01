@@ -1,5 +1,4 @@
 import asyncio
-import hashlib
 import logging
 import os
 import re
@@ -16,7 +15,7 @@ from aiogram.enums import ChatAction, ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import FSInputFile, Message, Update
 from dotenv import load_dotenv
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 
 BASE_DIR = Path(__file__).resolve().parent
 DOWNLOADS_DIR = BASE_DIR / "downloads"
@@ -33,7 +32,6 @@ ALLOWED_USERS = {
 RENDER_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
 PORT = int(os.getenv("PORT", "10000"))
 WEBHOOK_PATH = "/telegram"
-WEBHOOK_SECRET = hashlib.sha256(BOT_TOKEN.encode()).hexdigest()[:32] if BOT_TOKEN else ""
 
 SUPPORTED_URL_PATTERN = re.compile(
     r"https?://(?:www\.)?(?:"
@@ -211,17 +209,11 @@ async def lifespan(_: FastAPI):
         raise RuntimeError("BOT_TOKEN غير موجود")
 
     webhook_url = f"https://{RENDER_HOSTNAME}{WEBHOOK_PATH}"
-    await bot.set_webhook(
-        webhook_url,
-        secret_token=WEBHOOK_SECRET,
-        drop_pending_updates=True,
-    )
+    await bot.set_webhook(webhook_url, drop_pending_updates=True)
     logging.info("Webhook enabled: %s", webhook_url)
 
     yield
 
-    # لا نحذف الـ webhook وقت تبديل النسخ في Render؛
-    # النسخة القديمة قد تتوقف بعد تشغيل النسخة الجديدة وتمسح ربطها.
     await bot.session.close()
 
 
@@ -234,12 +226,7 @@ async def health() -> dict[str, str]:
 
 
 @app.post(WEBHOOK_PATH)
-async def telegram_webhook(
-    request: Request,
-    x_telegram_bot_api_secret_token: str | None = Header(default=None),
-) -> dict[str, bool]:
-    if x_telegram_bot_api_secret_token != WEBHOOK_SECRET:
-        raise HTTPException(status_code=403, detail="Invalid webhook secret")
+async def telegram_webhook(request: Request) -> dict[str, bool]:
     if not bot:
         raise HTTPException(status_code=500, detail="Bot is not configured")
 
