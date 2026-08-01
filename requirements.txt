@@ -1,3 +1,5 @@
 aiogram
 yt-dlp
 python-dotenv
+fastapi
+uvicorn[standard]
